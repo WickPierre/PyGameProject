@@ -4,8 +4,7 @@ import sys
 from upload_image import load_image
 
 
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
+SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.set_mode().get_size()
 BUTTON_SIZE = SCREEN_WIDTH / 4, SCREEN_HEIGHT / 12
 GREEN = (0, 100, 20)
 LIGHT_GREEN = (0, 150, 20)
@@ -81,3 +80,6 @@ def main_menu():
                     sys.exit()
         pygame.display.flip()
         clock.tick(FPS)
+
+
+# main_menu()
