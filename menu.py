@@ -1,28 +1,12 @@
 import pygame
 import os
 import sys
-
-pygame.init()
-
-
-def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    if colorkey is not None:
-        image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    else:
-        image = image.convert_alpha()
-    return image
+from upload_image import load_image
 
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
+BUTTON_SIZE = SCREEN_WIDTH / 4, SCREEN_HEIGHT / 12
 GREEN = (0, 100, 20)
 LIGHT_GREEN = (0, 150, 20)
 FPS = 60
@@ -32,7 +16,7 @@ class Menu:
     def __init__(self, screen):
         self.screen = screen
 
-        self.background = load_image("background.jpeg")
+        self.background = load_image("other", "background.jpeg")
 
         self.font_large = pygame.font.SysFont(None, 144)
         self.font_small = pygame.font.SysFont(None, 72)
@@ -41,10 +25,9 @@ class Menu:
 
         self.x_b = (SCREEN_WIDTH - (SCREEN_WIDTH / 4)) / 2
         self.h_b = SCREEN_HEIGHT / 2.4
-        self.button_size = (SCREEN_WIDTH / 4, SCREEN_HEIGHT / 12)
-        self.start_button = pygame.draw.rect(self.screen, self.start_button_color, (self.x_b, self.h_b, *self.button_size),
+        self.start_button = pygame.draw.rect(self.screen, self.start_button_color, (self.x_b, self.h_b, *BUTTON_SIZE),
                                              border_radius=25)
-        self.exit_button = pygame.draw.rect(self.screen, self.exit_button_color, (self.x_b, self.h_b + 180, *self.button_size),
+        self.exit_button = pygame.draw.rect(self.screen, self.exit_button_color, (self.x_b, self.h_b + 180, *BUTTON_SIZE),
                                             border_radius=25)
 
     def draw(self):
@@ -53,9 +36,9 @@ class Menu:
         text_title = self.font_large.render("Пасьянс", True, (255, 255, 255))
         self.screen.blit(text_title, ((SCREEN_WIDTH - text_title.get_width()) / 2, 180))
 
-        self.start_button = pygame.draw.rect(self.screen, self.start_button_color, (self.x_b, self.h_b, *self.button_size),
+        self.start_button = pygame.draw.rect(self.screen, self.start_button_color, (self.x_b, self.h_b, *BUTTON_SIZE),
                                              border_radius=25)
-        self.exit_button = pygame.draw.rect(self.screen, self.exit_button_color, (self.x_b, self.h_b + 180, *self.button_size),
+        self.exit_button = pygame.draw.rect(self.screen, self.exit_button_color, (self.x_b, self.h_b + 180, *BUTTON_SIZE),
                                             border_radius=25)
 
         text_start = self.font_small.render("Начать игру", True, (255, 255, 255))
@@ -68,6 +51,7 @@ class Menu:
 
 
 def main_menu():
+    pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("Пасьянс")
     menu = Menu(screen)
