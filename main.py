@@ -13,62 +13,105 @@ SUITS = ['hearts', 'diamonds', 'clubs', 'spades']
 RANKS = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king']
 
 
-class Deck:
-    def __init__(self):
-        self.deck = create_deck()
-        self.cards = self.deck.copy()
-        self.shuffle()
-        self.x, self.y, (self.w, self.h) = 50, 50, CARD_SIZE
-
-    def shuffle(self):
-        random.shuffle(self.deck)
-
-    def check_pos(self, x, y):
-        if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
-            return True
-        return False
-
-    def draw_card(self):
-        if self.cards:
-            card = self.cards[0]
-            self.cards = self.cards[1:]
-        else:
-            return None
-        return card
-
-    def spread_cards(self):
-        pass
-
-
-# Функция для создания колоды карт
-def create_deck():
-    return [Card(suit, rank, "close") for suit in SUITS for rank in RANKS]
-
-
 def is_card_clamped(x, y):
     for card in deck.deck:
         if card.check_pos(x, y) and card.is_movable:
-            return card
+            return True
     return False
 
 
 # Функция отрисовки игрового поля
 def draw_background():
     image = load_image("other", "background.jpeg")
-    pygame.draw.rect(image, (1, 50, 32), (50, 50, CARD_SIZE[0], CARD_SIZE[1]), width=3, border_radius=int(K*6))
-    pygame.draw.rect(image, (1, 50, 32), (600, 50, CARD_SIZE[0], CARD_SIZE[1]), width=3, border_radius=int(K*6))
-    pygame.draw.rect(image, (1, 50, 32), (650 + CARD_SIZE[0], 50, CARD_SIZE[0], CARD_SIZE[1]), width=3, border_radius=int(K*6))
-    pygame.draw.rect(image, (1, 50, 32), (700 + 2 * CARD_SIZE[0], 50, CARD_SIZE[0], CARD_SIZE[1]), width=3, border_radius=int(K*6))
-    pygame.draw.rect(image, (1, 50, 32), (750 + 3 * CARD_SIZE[0], 50, CARD_SIZE[0], CARD_SIZE[1]), width=3, border_radius=int(K*6))
+    pygame.draw.rect(image, (1, 50, 32), (50, 50, CARD_SIZE[0], CARD_SIZE[1]), width=3,
+                     border_radius=int(K*6))
+    pygame.draw.rect(image, (1, 50, 32), (600, 50, CARD_SIZE[0], CARD_SIZE[1]), width=3,
+                     border_radius=int(K*6))
+    pygame.draw.rect(image, (1, 50, 32), (650 + CARD_SIZE[0], 50, CARD_SIZE[0], CARD_SIZE[1]), width=3,
+                     border_radius=int(K*6))
+    pygame.draw.rect(image, (1, 50, 32), (700 + 2 * CARD_SIZE[0], 50, CARD_SIZE[0], CARD_SIZE[1]), width=3,
+                     border_radius=int(K*6))
+    pygame.draw.rect(image, (1, 50, 32), (750 + 3 * CARD_SIZE[0], 50, CARD_SIZE[0], CARD_SIZE[1]), width=3,
+                     border_radius=int(K*6))
     screen.blit(image, (0, 0))
 
 
+class Deck:
+    def __init__(self):
+        self.deck = []
+        self.drop_deck = []
+        self.field = []
+        self.create_deck()
+        self.cards = self.deck.copy()
+        self.spread_cards()
+        self.x, self.y, (self.w, self.h) = 50, 50, CARD_SIZE
+        self.d_x, self.d_y = 250, 50
+
+    def create_deck(self):
+        self.deck = [(suit, rank, "close", "deck") for suit in SUITS for rank in RANKS]
+        random.shuffle(self.deck)
+        self.deck = list(map(lambda x: Card(*x), self.deck))
+        # self.field = list(map(lambda x: x.set_mobility(False), self.deck[:29]))
+
+    def shuffle(self):
+        random.shuffle(self.deck)
+        self.deck = map(lambda x: Card(*x), self.deck)
+
+    def check_pos(self, x, y, kind):
+        if kind == "deck":
+            if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
+                return True
+        else:
+            if self.d_x <= x <= self.d_x + self.w and self.d_y <= y <= self.d_y + self.h:
+                return True
+        return False
+
+    def draw_card(self, start=False):
+        if start:
+            if self.cards:
+                card = self.cards[0]
+                self.cards = self.cards[1:]
+                return card
+        else:
+            if self.drop_deck:
+                card = self.drop_deck[-1]
+                self.drop_deck = self.drop_deck[:-1]
+                return card
+        return Card("hearts", "ace", "open", "deck")  # will be fixed in the future
+
+    def take_card(self):
+        if self.cards:
+            card = self.cards[0]
+            card.move(200, 0)
+            card.change_status("open")
+            self.drop_deck.append(card)
+            self.cards = self.cards[1:]
+        else:
+            self.cards = self.drop_deck
+            self.drop_deck = []
+            _ = [i.move(-200, 0) for i in self.cards]
+            _ = [i.change_status("close") for i in self.cards]
+
+    def spread_cards(self):
+        y = 300
+        for i in range(8):
+            flag = True
+            for j in range(i, 7):
+                card = self.draw_card(True)
+                if flag:
+                    card.change_status("open")
+                    flag = False
+                card.move_to(300 + 200 * j, y)
+            y += 50
+
+
 class Card(pygame.sprite.Sprite):
-    def __init__(self, suit, rank, status):
+    def __init__(self, suit, rank, status, kind):
         super().__init__(all_sprites)
         self.suit = suit
         self.rank = rank
         self.is_movable = True
+        self.kind_of_card = kind
         self.card_face = load_image("cards", self.suit + "_" + self.rank + ".png", -1)
         self.card_back = load_image("cards", "red_back2.png", -1)
         self.scale()
@@ -91,6 +134,10 @@ class Card(pygame.sprite.Sprite):
     # def is_status_changed(self):
     #     return self._changed
 
+    def set_mobility(self, value):
+        self.is_movable = value
+        return self
+
     def change_status(self, status):
         if status == "open":
             self.status = "open"
@@ -102,6 +149,10 @@ class Card(pygame.sprite.Sprite):
     def scale(self):
         self.card_face = pygame.transform.scale(self.card_face, CARD_SIZE)
         self.card_back = pygame.transform.scale(self.card_back, CARD_SIZE)
+
+    def move_to(self, x, y):
+        self.rect.x = x
+        self.rect.y = y
 
     def move(self, x, y):
         self.rect = self.rect.move(x, y)
@@ -116,8 +167,6 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     all_sprites = pygame.sprite.Group()
     clock = pygame.time.Clock()
-    deck = Deck()
-    running = True
     main_menu()
     # x = 0
     # y = 0
@@ -127,22 +176,29 @@ if __name__ == '__main__':
     #     if x == 13:
     #         x = 0
     #         y += 1
+    running = True
     pos = None
     is_mouse_clamped = False
+    is_card_taken = False
     current_card = None
+    deck = Deck()
     while running:
         draw_background()
+        # deck.spread_cards()
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if deck.check_pos(*event.pos):
-                    current_card = deck.draw_card()
-                    is_mouse_clamped = True
-                if current_card := is_card_clamped(*event.pos):
-                    current_card.change_status("open")
-                    is_mouse_clamped = True
+                if deck.check_pos(*event.pos, "deck"):
+                    is_card_taken = True
+                elif deck.check_pos(*event.pos, "drop_deck"):
+                    if is_card_clamped(*event.pos):
+                        current_card = deck.draw_card()
+                        is_mouse_clamped = True
             if event.type == pygame.MOUSEBUTTONUP:
+                if is_card_taken:
+                    deck.take_card()
+                    is_card_taken = False
                 is_mouse_clamped = False
             if event.type == pygame.MOUSEMOTION and is_mouse_clamped:
                 current_card.move(*event.rel)
