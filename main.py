@@ -16,7 +16,7 @@ RANKS = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', '
 def is_card_clamped(x, y):
     for card in deck.deck:
         if card.check_pos(x, y) and card.is_movable:
-            return True
+            return card
     return False
 
 
@@ -40,12 +40,12 @@ class Deck:
     def __init__(self):
         self.deck = []
         self.drop_deck = []
-        self.field = []
+        self.field = [[] for i in range(7)]
         self.create_deck()
         self.cards = self.deck.copy()
         self.spread_cards()
-        self.x, self.y, (self.w, self.h) = 50, 50, CARD_SIZE
-        self.d_x, self.d_y = 250, 50
+        self.deck_rect = pygame.rect.Rect(50, 50, *CARD_SIZE)
+        self.drop_deck_rect = pygame.rect.Rect(250, 50, *CARD_SIZE)
 
     def create_deck(self):
         self.deck = [(suit, rank, "close", "deck") for suit in SUITS for rank in RANKS]
@@ -57,14 +57,14 @@ class Deck:
         random.shuffle(self.deck)
         self.deck = map(lambda x: Card(*x), self.deck)
 
-    def check_pos(self, x, y, kind):
-        if kind == "deck":
-            if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
-                return True
-        else:
-            if self.d_x <= x <= self.d_x + self.w and self.d_y <= y <= self.d_y + self.h:
-                return True
-        return False
+    # def check_pos(self, x, y, kind):
+    #     if kind == "deck":
+    #         if self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h:
+    #             return True
+    #     else:
+    #         if self.d_x <= x <= self.d_x + self.w and self.d_y <= y <= self.d_y + self.h:
+    #             return True
+    #     return False
 
     def draw_card(self, start=False):
         if start:
@@ -98,11 +98,17 @@ class Deck:
             flag = True
             for j in range(i, 7):
                 card = self.draw_card(True)
+                card.kind_of_card = "field"
                 if flag:
                     card.change_status("open")
                     flag = False
                 card.move_to(300 + 200 * j, y)
+                self.field[j].append(card)
             y += 50
+        print(self.field)
+
+    def return_back_card_to_drop_deck(self, card):
+        self.drop_deck.append(card)
 
 
 class Card(pygame.sprite.Sprite):
@@ -162,6 +168,13 @@ class Card(pygame.sprite.Sprite):
             return True
         return False
 
+    # def __str__(self):
+    #     return f"{self.suit} {self.rank} {self.is_movable} {self.kind_of_card} {self.status}"
+
+    def __repr__(self):
+        return "suit: {}, rank: {}, is_movable: {}, kind_of_card: {}, status: {}".format(
+            self.suit, self.rank, self.is_movable, self.kind_of_card, self.status)
+
 
 if __name__ == '__main__':
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -182,6 +195,7 @@ if __name__ == '__main__':
     is_card_taken = False
     current_card = None
     deck = Deck()
+    old_coords = (0, 0)
     while running:
         draw_background()
         # deck.spread_cards()
@@ -189,13 +203,19 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if deck.check_pos(*event.pos, "deck"):
+                if deck.deck_rect.collidepoint(event.pos):
                     is_card_taken = True
-                elif deck.check_pos(*event.pos, "drop_deck"):
+                elif deck.drop_deck_rect.collidepoint(event.pos):
                     if is_card_clamped(*event.pos):
                         current_card = deck.draw_card()
+                        old_coords = current_card.rect.x, current_card.rect.y
                         is_mouse_clamped = True
+                elif current_card := is_card_clamped(*event.pos):
+                    print(current_card.kind_of_card)
             if event.type == pygame.MOUSEBUTTONUP:
+                if not deck.deck_rect.collidepoint(event.pos) and is_mouse_clamped:
+                    deck.return_back_card_to_drop_deck(current_card)
+                    current_card.move_to(*old_coords)
                 if is_card_taken:
                     deck.take_card()
                     is_card_taken = False
