@@ -103,10 +103,12 @@ class Game:
     def point_collide_field_card(self, x, y, check_card):
         for col in range(len(self.field)):
             for card in self.field[col][::-1]:
-                if card.rect.collidepoint(x, y) and card != self.field[col][-1] and card != check_card:
-                    return self.field[col][self.field[col].index(card):], col
                 if card.rect.collidepoint(x, y) and card != check_card:
-                    return card, col
+                    print(card.get_info())
+                    if card == self.field[col][-1]:
+                        return card, col
+                    else:
+                        return self.field[col][self.field[col].index(card):], col
         return False
 
     def point_collide_foundation_card(self, x, y):
@@ -158,8 +160,9 @@ class Game:
 
     def check_foundation(self):
         for i in range(4):
-            if self.foundation[i] and ((", ".join(list(map(lambda x: x.rank, self.foundation[i]))) not in ", ".join(RANKS)) or
-                    len(list(set(list(map(lambda x: x.suit, self.foundation[i]))))) != 1):
+            if self.foundation[i] and (", ".join(list(map(lambda x: x.rank, self.foundation[i]))) not in ", ".join(RANKS)
+                                       or self.foundation[i][0].rank != "ace" or
+                                       len(list(set(list(map(lambda x: x.suit, self.foundation[i]))))) != 1):
                 return False
         return True
 
@@ -170,3 +173,16 @@ class Game:
             answer = True
         self.foundation[stack].remove(card)
         return answer
+
+    def collect_all_cards(self):
+        is_card_collected = True
+        while is_card_collected:
+            is_card_collected = False
+            for cards in self.field:
+                card = cards[-1] if cards else False
+                for stack in range(4):
+                    if cards and cards[-1].is_movable and self.check_foundation_cards(card, stack):
+                        self.replace_card_to_foundation(card, stack, self.field.index(cards))
+                        card.move_to(self.foundation_rects[stack].x, self.foundation_rects[stack].y)
+                        is_card_collected = True
+                        break
