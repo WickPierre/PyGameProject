@@ -169,6 +169,8 @@ if __name__ == '__main__':
     old_column = None
     new_column = None
     old_coords = None
+    stack = None
+    rect = None
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -200,8 +202,22 @@ if __name__ == '__main__':
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if card_taken_from_drop_deck:
-                    if not (new_card := gm.collide_field_card(current_card)):
+                    if stack := gm.point_collide_foundation_card(*event.pos):
+                        stack -= 1
+                        if gm.check_foundation_cards(current_card, stack):
+                            current_card.move_to(gm.foundation_rects[stack].x, gm.foundation_rects[stack].y)
+                            gm.replace_card_to_foundation(current_card, stack, old_column)
+                        else:
+                            current_card.move_to(*old_coords)
+
+                    elif response := gm.collide_field_rect(current_card):
+                        rect, i = response
+                        gm.field[i].append(current_card)
+                        current_card.move_to(rect.x, rect.y)
+
+                    elif not (new_card := gm.collide_field_card(current_card)):
                         deck.return_back_card_to_drop_deck(current_card)
+
                     else:
                         current_card.move_to_card(new_card)
                     gm.moving_cards = []
@@ -219,6 +235,19 @@ if __name__ == '__main__':
                             gm.replace_card(current_card, old_column, new_column)
                         else:
                             current_card.move_to(*old_coords)
+
+                    elif response := gm.collide_field_rect(current_card):
+                        rect, new_column = response
+                        current_card.move_to(rect.x, rect.y)
+                        gm.replace_card(current_card, old_column, new_column)
+
+                    elif stack := gm.point_collide_foundation_card(*event.pos):
+                        stack -= 1
+                        if gm.check_foundation_cards(current_card, stack):
+                            current_card.move_to(gm.foundation_rects[stack].x, gm.foundation_rects[stack].y)
+                            gm.replace_card_to_foundation(current_card, stack, old_column)
+                        else:
+                            current_card.move_to(*old_coords)
                     else:
                         current_card.move_to(*old_coords)
                     gm.moving_cards = []
@@ -232,6 +261,13 @@ if __name__ == '__main__':
                             gm.replace_cards(current_cards, old_column, new_column)
                         else:
                             return_back_several_cards(*old_coords, current_cards)
+
+                    elif response := gm.collide_field_rect(current_cards[0]):
+                        rect, new_column = response
+                        current_cards[0].move_to(rect.x, rect.y)
+                        move_cards_to_card(current_cards[1:], current_cards[0])
+                        gm.replace_cards(current_cards, old_column, new_column)
+
                     else:
                         return_back_several_cards(*old_coords, current_cards)
                     gm.moving_cards = []
