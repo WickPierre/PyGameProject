@@ -53,7 +53,6 @@ class Game:
             self.draw_card(self.moving_card)
 
     def check_field(self):
-        # print("\n".join(list(map(lambda x: "|" + "; ".join(list(map(lambda z: z.get_info(), x))), self.field))))
         for cards in self.field:
             e = []
             for card in cards:
@@ -70,11 +69,40 @@ class Game:
 
     def collide_field_card(self, card):
         for i in self.field:
-            if card.rect.colliderect(i[-1].rect):
+            if i and card.rect.colliderect(i[-1].rect):
                 i.append(card)
                 if self.check_field():
                     return i[-2]
-                else:
-                    i.remove(i[-1])
-                    break
+                i.remove(i[-1])
+                return False
+
+    def point_collide_column(self, x, y):
+        for col in range(len(self.field)):
+            for card in self.field[col][::-1]:
+                if card.rect.collidepoint(x, y):
+                    return col
+
+    def point_collide_field_card(self, x, y, check_card):
+        for col in range(len(self.field)):
+            for card in self.field[col][::-1]:
+                if card.rect.collidepoint(x, y) and card != check_card:
+                    return card, col
         return False
+
+    def replace_card(self, card, old_column, new_column):
+        if old_column == new_column:
+            print("11111", card.get_info())
+            print("\n".join(list(map(lambda z: z.get_info(), self.field[old_column]))))
+        self.field[old_column].remove(card)
+        self.field[new_column].append(card)
+        if self.field[old_column]:
+            self.field[old_column][-1].change_status("open")
+        # print("\n".join(list(map(lambda x: "|" + "; ".join(list(map(lambda z: z.get_info(), x))), self.field))))
+
+    def check_field_card(self, card, column):
+        self.field[column].append(card)
+        answer = False
+        if self.check_field():
+            answer = True
+        self.field[column].remove(card)
+        return answer

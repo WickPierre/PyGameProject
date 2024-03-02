@@ -38,9 +38,11 @@ class Card:
         if status == "open":
             self.status = "open"
             self.image = self.card_face
+            self.is_movable = True
         elif status == "close":
             self.status = "close"
             self.image = self.card_back
+            self.is_movable = False
 
     def scale(self):
         self.card_face = pygame.transform.scale(self.card_face, CARD_SIZE)
@@ -60,11 +62,6 @@ class Card:
 
     def move(self, x, y):
         self.rect = self.rect.move(x, y)
-
-    def check_pos(self, x, y):
-        if self.rect.collidepoint(x, y):
-            return True
-        return False
 
     def get_info(self):
         if self.status == "open":
@@ -93,12 +90,6 @@ class Deck:
             return True
         return False
 
-    def is_card_clamped(self, x, y):
-        for card in self.deck:
-            if card.rect.collidepoint(x, y) and card.is_movable:
-                return card
-        return False
-
     def create_deck(self):
         self.deck = [Card(suit, rank, "close", "deck") for suit in SUITS for rank in RANKS]
         random.shuffle(self.deck)
@@ -123,7 +114,7 @@ class Deck:
             card.change_status("open")
             self.drop_deck.append(card)
             self.deck = self.deck[1:]
-            game_manager.draw_card(card)
+            gm.draw_card(card)
         else:
             self.deck = self.drop_deck
             self.drop_deck = []
@@ -142,7 +133,7 @@ class Deck:
                     card.change_status("open")
                     flag = False
                 card.move_to(300 + 200 * j, y)
-                game_manager.field[j].append(card)
+                gm.field[j].append(card)
             y += 40
 
     def return_back_card_to_drop_deck(self, card):
@@ -154,13 +145,16 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
     main_menu()
-    game_manager = Game(screen)
+    gm = Game(screen)  # game manager
     running = True
     deck = Deck()
     card_taken = False
     card_taken_from_drop_deck = False
-    is_card_clamped = False
+    card_taken_from_field = False
     current_card = None
+    old_column = None
+    new_column = None
+    old_coords = None
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
@@ -171,30 +165,48 @@ if __name__ == '__main__':
                 if deck.deck_rect.collidepoint(coords):  # if we want to flip through the deck
                     card_taken = True
 
-                elif deck.collide_point_for_drop_deck(*coords):  # if we want to take card from the drop deck
+                elif deck.collide_point_for_drop_deck(*coords):  # if we want to replace card from the drop deck
                     card_taken_from_drop_deck = True
                     current_card = deck.draw_card()
-                    game_manager.moving_card = current_card
+                    gm.moving_card = current_card
 
-                elif deck.is_card_clamped(*coords):  # if we press mouse button on field card
-                    pass
+                elif current_card := gm.point_collide_field_card(*coords, current_card):  # if we want to replace field card
+                    current_card, old_column = current_card
+                    if current_card.is_movable:
+                        card_taken_from_field = True
+                        gm.moving_card = current_card
+                        old_coords = current_card.rect.x, current_card.rect.y
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if card_taken_from_drop_deck:
-                    if not (new_card := game_manager.collide_field_card(current_card)):
+                    if not (new_card := gm.collide_field_card(current_card)):
                         deck.return_back_card_to_drop_deck(current_card)
                     else:
                         current_card.move_to_card(new_card)
-                    game_manager.moving_card = None
+                    gm.moving_card = None
                     card_taken_from_drop_deck = False
+
                 if card_taken and deck.deck_rect.collidepoint(event.pos):
                     card_taken = False
                     deck.take_card()
 
+                if card_taken_from_field:
+                    if new_card := gm.point_collide_field_card(*event.pos, current_card):
+                        new_card, new_column = new_card
+                        if gm.check_field_card(current_card, new_column):
+                            current_card.move_to_card(new_card)
+                            gm.replace_card(current_card, old_column, new_column)
+                        else:
+                            current_card.move_to(*old_coords)
+                    else:
+                        current_card.move_to(*old_coords)
+                    gm.moving_card = None
+                    card_taken_from_field = False
+
             if event.type == pygame.MOUSEMOTION:
-                if card_taken_from_drop_deck:
+                if card_taken_from_drop_deck or card_taken_from_field:
                     current_card.move(*event.rel)
-        game_manager.render(deck)
+        gm.render(deck)
         pygame.display.flip()
         clock.tick(FPS)
     pygame.quit()
