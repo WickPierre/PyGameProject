@@ -20,7 +20,7 @@ class Game:
             pygame.rect.Rect(700 + 2 * CARD_SIZE[0], 50, *CARD_SIZE),
             pygame.rect.Rect(750 + 3 * CARD_SIZE[0], 50, *CARD_SIZE)
         ]
-        self.moving_card = None
+        self.moving_cards = []
 
     def draw_card(self, card):
         self.screen.blit(card.get_image(), (card.rect.x, card.rect.y))
@@ -46,11 +46,12 @@ class Game:
             for card in cards:
                 self.draw_card(card)
         self.draw_decks(deck.deck, deck.drop_deck)
-        self.draw_moving_card()
+        self.draw_moving_cards()
 
-    def draw_moving_card(self):
-        if self.moving_card is not None:
-            self.draw_card(self.moving_card)
+    def draw_moving_cards(self):
+        if self.moving_cards:
+            for card in self.moving_cards:
+                self.draw_card(card)
 
     def check_field(self):
         for cards in self.field:
@@ -85,16 +86,24 @@ class Game:
     def point_collide_field_card(self, x, y, check_card):
         for col in range(len(self.field)):
             for card in self.field[col][::-1]:
+                if card.rect.collidepoint(x, y) and card != self.field[col][-1] and card != check_card:
+                    return self.field[col][self.field[col].index(card):], col
                 if card.rect.collidepoint(x, y) and card != check_card:
                     return card, col
         return False
 
     def replace_card(self, card, old_column, new_column):
-        if old_column == new_column:
-            print("11111", card.get_info())
-            print("\n".join(list(map(lambda z: z.get_info(), self.field[old_column]))))
         self.field[old_column].remove(card)
         self.field[new_column].append(card)
+        if self.field[old_column]:
+            self.field[old_column][-1].change_status("open")
+        # print("\n".join(list(map(lambda x: "|" + "; ".join(list(map(lambda z: z.get_info(), x))), self.field))))
+
+    def replace_cards(self, cards, old_column, new_column):
+        for card in cards:
+            self.field[old_column].remove(card)
+        for card in cards:
+            self.field[new_column].append(card)
         if self.field[old_column]:
             self.field[old_column][-1].change_status("open")
         # print("\n".join(list(map(lambda x: "|" + "; ".join(list(map(lambda z: z.get_info(), x))), self.field))))
@@ -105,4 +114,14 @@ class Game:
         if self.check_field():
             answer = True
         self.field[column].remove(card)
+        return answer
+
+    def check_field_cards(self, cards, column):
+        for card in cards:
+            self.field[column].append(card)
+        answer = False
+        if self.check_field():
+            answer = True
+        for card in cards:
+            self.field[column].remove(card)
         return answer

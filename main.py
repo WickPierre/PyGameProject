@@ -13,6 +13,18 @@ SUITS = ['hearts', 'diamonds', 'clubs', 'spades']
 RANKS = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king']
 
 
+def move_cards_to_card(cards, destination_card):
+    for card in cards:
+        card.move_to_card(destination_card)
+        destination_card = card
+
+
+def return_back_several_cards(x, y, cards):
+    for card in cards:
+        card.move_to(x, y)
+        y += 40
+
+
 class Card:
     def __init__(self, suit, rank, status, kind):
         # super().__init__(all_sprites)
@@ -150,8 +162,10 @@ if __name__ == '__main__':
     deck = Deck()
     card_taken = False
     card_taken_from_drop_deck = False
-    card_taken_from_field = False
+    one_card_taken_from_field = False
+    several_cards_taken_from_field = False
     current_card = None
+    current_cards = None
     old_column = None
     new_column = None
     old_coords = None
@@ -168,14 +182,21 @@ if __name__ == '__main__':
                 elif deck.collide_point_for_drop_deck(*coords):  # if we want to replace card from the drop deck
                     card_taken_from_drop_deck = True
                     current_card = deck.draw_card()
-                    gm.moving_card = current_card
+                    gm.moving_cards = [current_card]
 
-                elif current_card := gm.point_collide_field_card(*coords, current_card):  # if we want to replace field card
-                    current_card, old_column = current_card
-                    if current_card.is_movable:
-                        card_taken_from_field = True
-                        gm.moving_card = current_card
-                        old_coords = current_card.rect.x, current_card.rect.y
+                elif response := gm.point_collide_field_card(*coords, current_card):  # if we want to replace field card
+                    if type(response[0]) is list:
+                        current_cards, old_column = response
+                        if current_cards[0].is_movable:
+                            several_cards_taken_from_field = True
+                            gm.moving_cards = current_cards
+                            old_coords = current_cards[0].rect.x, current_cards[0].rect.y
+                    else:
+                        current_card, old_column = response
+                        if current_card.is_movable:
+                            one_card_taken_from_field = True
+                            gm.moving_cards = [current_card]
+                            old_coords = current_card.rect.x, current_card.rect.y
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if card_taken_from_drop_deck:
@@ -183,16 +204,16 @@ if __name__ == '__main__':
                         deck.return_back_card_to_drop_deck(current_card)
                     else:
                         current_card.move_to_card(new_card)
-                    gm.moving_card = None
+                    gm.moving_cards = []
                     card_taken_from_drop_deck = False
 
                 if card_taken and deck.deck_rect.collidepoint(event.pos):
                     card_taken = False
                     deck.take_card()
 
-                if card_taken_from_field:
-                    if new_card := gm.point_collide_field_card(*event.pos, current_card):
-                        new_card, new_column = new_card
+                if one_card_taken_from_field:
+                    if response := gm.point_collide_field_card(*event.pos, current_card):
+                        new_card, new_column = response
                         if gm.check_field_card(current_card, new_column):
                             current_card.move_to_card(new_card)
                             gm.replace_card(current_card, old_column, new_column)
@@ -200,12 +221,29 @@ if __name__ == '__main__':
                             current_card.move_to(*old_coords)
                     else:
                         current_card.move_to(*old_coords)
-                    gm.moving_card = None
-                    card_taken_from_field = False
+                    gm.moving_cards = []
+                    one_card_taken_from_field = False
+
+                if several_cards_taken_from_field:
+                    if response := gm.point_collide_field_card(*event.pos, current_cards[0]):
+                        new_card, new_column = response
+                        if gm.check_field_cards(current_cards, new_column):
+                            move_cards_to_card(current_cards, new_card)
+                            gm.replace_cards(current_cards, old_column, new_column)
+                        else:
+                            return_back_several_cards(*old_coords, current_cards)
+                    else:
+                        return_back_several_cards(*old_coords, current_cards)
+                    gm.moving_cards = []
+                    several_cards_taken_from_field = False
 
             if event.type == pygame.MOUSEMOTION:
-                if card_taken_from_drop_deck or card_taken_from_field:
+                if card_taken_from_drop_deck or one_card_taken_from_field:
                     current_card.move(*event.rel)
+                elif several_cards_taken_from_field:
+                    for card in current_cards:
+                        card.move(*event.rel)
+
         gm.render(deck)
         pygame.display.flip()
         clock.tick(FPS)
