@@ -104,7 +104,6 @@ class Game:
         for col in range(len(self.field)):
             for card in self.field[col][::-1]:
                 if card.rect.collidepoint(x, y) and card != check_card:
-                    print(card.get_info())
                     if card == self.field[col][-1]:
                         return card, col
                     else:
@@ -174,7 +173,7 @@ class Game:
         self.foundation[stack].remove(card)
         return answer
 
-    def collect_all_cards(self):
+    def collect_all_cards(self, deck):
         is_card_collected = True
         while is_card_collected:
             is_card_collected = False
@@ -186,3 +185,24 @@ class Game:
                         card.move_to(self.foundation_rects[stack].x, self.foundation_rects[stack].y)
                         is_card_collected = True
                         break
+            if deck.drop_deck:
+                card = deck.drop_deck[-1]
+                for stack in range(4):
+                    if card.is_movable and self.check_foundation_cards(card, stack):
+                        deck.draw_card()
+                        self.foundation[stack].append(card)
+                        card.move_to(self.foundation_rects[stack].x, self.foundation_rects[stack].y)
+                        is_card_collected = True
+                        break
+
+    def restart(self):
+        if self.check_win():
+            pass
+        self.field = [[] for i in range(7)]
+        self.foundation = [[] for i in range(4)]
+        self.moving_cards = []
+
+    def check_win(self):
+        if sum(list(map(lambda x: len(x), self.foundation))) == 52:
+            return True
+        return False
