@@ -29,6 +29,9 @@ class Game:
             pygame.rect.Rect(700 + 2 * CARD_SIZE[0], 50, *CARD_SIZE),
             pygame.rect.Rect(750 + 3 * CARD_SIZE[0], 50, *CARD_SIZE)
         ]
+        self.wins = 0
+        self.losses = 0
+        self.load_stats()
         self.moving_cards = []
 
     def draw_card(self, card):
@@ -197,12 +200,24 @@ class Game:
 
     def restart(self):
         if self.check_win():
-            pass
+            self.wins += 1
+        else:
+            self.losses += 1
+        self.change_stats()
         self.field = [[] for i in range(7)]
         self.foundation = [[] for i in range(4)]
         self.moving_cards = []
 
+    def load_stats(self):
+        with open("data/statistics/statistics.txt", "r") as file:
+            self.wins, self.losses = map(int, ":".join(file.read().split("\n")).split(":")[1::2])
+
+    def change_stats(self):
+        with open("data/statistics/statistics.txt", "w") as file:
+            file.write("Wins:" + str(self.wins) + "\n")
+            file.write("Losses:" + str(self.losses))
+
     def check_win(self):
-        if sum(list(map(lambda x: len(x), self.foundation))) == 52:
+        if sum(list(map(lambda x: len(x), self.foundation))) == 52 or all([j.is_movable for i in self.field for j in i]):
             return True
         return False

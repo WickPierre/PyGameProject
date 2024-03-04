@@ -151,7 +151,6 @@ class Deck:
             card.change_status("open")
             self.drop_deck.append(card)
             self.deck = self.deck[1:]
-            gm.draw_card(card)
         else:
             self.deck = self.drop_deck
             self.drop_deck = []
