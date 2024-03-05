@@ -1,12 +1,6 @@
 import pygame
 from upload_image import load_image
-
-
-CARD_SIZE = 223, 312
-K = 0.75
-CARD_SIZE = CARD_SIZE[0] * K, CARD_SIZE[1] * K
-SUITS = ['hearts', 'diamonds', 'clubs', 'spades']
-RANKS = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king']
+from config import CARD_SIZE, K, SUITS, RANKS, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
 class Game:
@@ -97,12 +91,6 @@ class Game:
             if card.rect.colliderect(self.field_rects[i]) and card.rank == "king" and not self.field[i]:
                 return self.field_rects[i], i
 
-    def point_collide_column(self, x, y):
-        for col in range(len(self.field)):
-            for card in self.field[col][::-1]:
-                if card.rect.collidepoint(x, y):
-                    return col
-
     def point_collide_field_card(self, x, y, check_card):
         for col in range(len(self.field)):
             for card in self.field[col][::-1]:
@@ -124,7 +112,6 @@ class Game:
         self.field[new_column].append(card)
         if self.field[old_column]:
             self.field[old_column][-1].change_status("open")
-        # print("\n".join(list(map(lambda x: "|" + "; ".join(list(map(lambda z: z.get_info(), x))), self.field))))
 
     def replace_cards(self, cards, old_column, new_column):
         for card in cards:
@@ -133,7 +120,6 @@ class Game:
             self.field[new_column].append(card)
         if self.field[old_column]:
             self.field[old_column][-1].change_status("open")
-        # print("\n".join(list(map(lambda x: "|" + "; ".join(list(map(lambda z: z.get_info(), x))), self.field))))
 
     def replace_card_to_foundation(self, card, stack, old_column):
         if card in self.field[old_column]:
@@ -221,3 +207,18 @@ class Game:
         if sum(list(map(lambda x: len(x), self.foundation))) == 52 or all([j.is_movable for i in self.field for j in i]):
             return True
         return False
+
+    def show_stats(self):
+        font = pygame.font.Font(None, 250)
+        image = pygame.Surface([SCREEN_WIDTH, SCREEN_HEIGHT], pygame.SRCALPHA, 32)
+        image.convert_alpha()
+        pygame.draw.rect(image, (0, 0, 0, 100), (0, 0, 1920, 1080))
+        pygame.draw.rect(image, (0, 100, 20), (400, 100, 1120, 880))
+        wins_text = font.render(f"Wins: {self.wins}", True, (0, 0, 0))
+        losses_text = font.render(f"Losses: {self.losses}", True, (0, 0, 0))
+        image.blit(wins_text, (500, 200))
+        image.blit(losses_text, (500, 600))
+        self.screen.blit(image, (0, 0))
+
+    def show_end_screen(self):
+        pass

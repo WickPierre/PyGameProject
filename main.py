@@ -3,16 +3,10 @@ import random
 from menu import main_menu
 from upload_image import load_image
 from game_manager import Game
+from config import FPS, CARD_SIZE, K, SUITS, RANKS, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
-CARD_SIZE = 223, 312
-K = 0.75
-CARD_SIZE = CARD_SIZE[0] * K, CARD_SIZE[1] * K
-FPS = 60
-SUITS = ['hearts', 'diamonds', 'clubs', 'spades']
-RANKS = ['ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king']
-SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.set_mode().get_size()
-BUTTON_SIZE = SCREEN_WIDTH / 8, SCREEN_HEIGHT / 14
+BUTTON_SIZE = SCREEN_WIDTH / 8, SCREEN_HEIGHT / 16
 
 
 class MenuButton:
@@ -36,8 +30,16 @@ class RestartGameButton(MenuButton):
     def __init__(self):
         super().__init__(screen)
         self.x = 1650
-        self.y = 150
+        self.y = 110
         self.text = "Restart"
+
+
+class ShowStatsButton(MenuButton):
+    def __init__(self):
+        super().__init__(screen)
+        self.x = 1650
+        self.y = 195
+        self.text = "Statistics"
 
 
 def move_cards_to_card(cards, destination_card):
@@ -102,10 +104,10 @@ class Card:
     def move(self, x, y):
         self.rect = self.rect.move(x, y)
 
-    def get_info(self):
-        if self.status == "open":
-            return f"{self.suit}, {self.rank}"
-        return "XX"
+    # def get_info(self):
+    #     if self.status == "open":
+    #         return f"{self.suit}, {self.rank}"
+    #     return "XX"
 
     def get_color_and_rank(self):
         if self.status == "open":
@@ -191,6 +193,8 @@ if __name__ == '__main__':
     deck = Deck()
     menu_button = MenuButton(screen)
     restart_game_button = RestartGameButton()
+    show_stats_button = ShowStatsButton()
+    stats_is_shown = False
     running = True
     card_taken = False
     card_taken_from_drop_deck = False
@@ -205,8 +209,10 @@ if __name__ == '__main__':
     rect = None
     while running:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                stats_is_shown = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
                 gm.collect_all_cards(deck)
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -215,6 +221,8 @@ if __name__ == '__main__':
                 elif restart_game_button.button.collidepoint(event.pos):
                     gm.restart()
                     deck.restart()
+                elif show_stats_button.button.collidepoint(event.pos):
+                    stats_is_shown = True
                 else:
                     coords = event.pos
 
@@ -324,17 +332,24 @@ if __name__ == '__main__':
                 else:
                     restart_game_button.button_color = (0, 100, 20)
 
+                if show_stats_button.button.collidepoint(*event.pos):
+                    show_stats_button.button_color = (0, 150, 20)
+                else:
+                    show_stats_button.button_color = (0, 100, 20)
+
                 if card_taken_from_drop_deck or one_card_taken_from_field:
                     current_card.move(*event.rel)
                 elif several_cards_taken_from_field:
                     for card in current_cards:
                         card.move(*event.rel)
-
         gm.render(deck)
         menu_button.draw()
         restart_game_button.draw()
+        show_stats_button.draw()
+        if stats_is_shown:
+            gm.show_stats()
         if gm.check_win():
-            print("You win!")
+            gm.show_end_screen()
         pygame.display.flip()
         clock.tick(FPS)
     pygame.quit()

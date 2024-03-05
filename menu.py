@@ -2,9 +2,9 @@ import pygame
 import os
 import sys
 from upload_image import load_image
+from config import FPS, SCREEN_WIDTH, SCREEN_HEIGHT
 
 
-SCREEN_WIDTH, SCREEN_HEIGHT = pygame.display.set_mode().get_size()
 BUTTON_SIZE = SCREEN_WIDTH / 4, SCREEN_HEIGHT / 12
 
 
@@ -29,7 +29,7 @@ class Menu:
     def draw(self):
         self.screen.blit(self.background, (0, 0))
 
-        text_title = self.font_large.render("Пасьянс", True, (255, 255, 255))
+        text_title = self.font_large.render("Solitaire", True, (255, 255, 255))
         self.screen.blit(text_title, ((SCREEN_WIDTH - text_title.get_width()) / 2, 180))
 
         self.start_button = pygame.draw.rect(self.screen, self.start_button_color,
@@ -37,11 +37,11 @@ class Menu:
         self.exit_button = pygame.draw.rect(self.screen, self.exit_button_color,
                                             (self.x_b, self.h_b + 180, *BUTTON_SIZE), border_radius=25)
 
-        text_start = self.font_small.render("Начать игру", True, (255, 255, 255))
+        text_start = self.font_small.render("Start", True, (255, 255, 255))
         text_start_rect = text_start.get_rect(center=self.start_button.center)
         self.screen.blit(text_start, text_start_rect)
 
-        text_exit = self.font_small.render("Выход", True, (255, 255, 255))
+        text_exit = self.font_small.render("Exit", True, (255, 255, 255))
         text_exit_rect = text_exit.get_rect(center=self.exit_button.center)
         self.screen.blit(text_exit, text_exit_rect)
 
@@ -49,7 +49,7 @@ class Menu:
 def main_menu():
     pygame.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-    pygame.display.set_caption("Пасьянс")
+    pygame.display.set_caption("Solitaire")
     menu = Menu(screen)
     clock = pygame.time.Clock()
     while True:
@@ -76,7 +76,4 @@ def main_menu():
                     pygame.quit()
                     sys.exit()
         pygame.display.flip()
-        clock.tick(60)
-
-
-# main_menu()
+        clock.tick(FPS)
