@@ -56,8 +56,7 @@ def main_menu():
         menu.draw()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                return "close game"
             if event.type == pygame.MOUSEMOTION:
                 mouse_x, mouse_y = event.pos
                 if menu.start_button.collidepoint(mouse_x, mouse_y):
@@ -73,7 +72,6 @@ def main_menu():
                 if menu.start_button.collidepoint(x, y):
                     return True
                 elif menu.exit_button.collidepoint(x, y):
-                    pygame.quit()
-                    sys.exit()
+                    return "close game"
         pygame.display.flip()
         clock.tick(FPS)

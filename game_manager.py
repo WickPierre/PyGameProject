@@ -91,15 +91,28 @@ class Game:
             if card.rect.colliderect(self.field_rects[i]) and card.rank == "king" and not self.field[i]:
                 return self.field_rects[i], i
 
-    def point_collide_field_card(self, x, y, check_card):
+    def point_collide_field_card(self, x, y):
         for col in range(len(self.field)):
             for card in self.field[col][::-1]:
-                if card.rect.collidepoint(x, y) and card != check_card:
+                if card.rect.collidepoint(x, y):
                     if card == self.field[col][-1]:
                         return card, col
                     else:
                         return self.field[col][self.field[col].index(card):], col
         return False
+
+    def take_card_from(self, col):
+        self.field[col] = self.field[col][:-1]
+
+    def take_cards_from(self, col, index):
+        self.field[col] = self.field[col][:-index]
+
+    def return_back_card_to(self, card, col):
+        self.field[col].append(card)
+
+    def return_back_cards_to(self, cards, col):
+        for card in cards:
+            self.field[col].append(card)
 
     def point_collide_foundation_card(self, x, y):
         for i in range(4):
@@ -108,14 +121,11 @@ class Game:
         return False
 
     def replace_card(self, card, old_column, new_column):
-        self.field[old_column].remove(card)
         self.field[new_column].append(card)
         if self.field[old_column]:
             self.field[old_column][-1].change_status("open")
 
     def replace_cards(self, cards, old_column, new_column):
-        for card in cards:
-            self.field[old_column].remove(card)
         for card in cards:
             self.field[new_column].append(card)
         if self.field[old_column]:
@@ -204,7 +214,7 @@ class Game:
             file.write("Losses:" + str(self.losses))
 
     def check_win(self):
-        if sum(list(map(lambda x: len(x), self.foundation))) == 52 or all([j.is_movable for i in self.field for j in i]):
+        if sum(list(map(lambda x: len(x), self.foundation))) == 52:
             return True
         return False
 
@@ -220,5 +230,9 @@ class Game:
         image.blit(losses_text, (500, 600))
         self.screen.blit(image, (0, 0))
 
-    def show_end_screen(self):
-        pass
+    def show_game_over_screen(self):
+        font = pygame.font.Font(pygame.font.get_default_font(), 150)
+        text = font.render("You Won!!!", True, (255, 0, 0))
+        textRect = text.get_rect()
+        textRect.center = self.screen.get_rect().center
+        self.screen.blit(text, textRect)
